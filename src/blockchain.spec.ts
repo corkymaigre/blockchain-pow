@@ -37,6 +37,27 @@ describe("Blockchain", () => {
     });
   });
 
+  describe("getNode", () => {
+    it("should get the current node", () => {
+      expect(blockchain.getNode()).toBeDefined();
+    });
+  });
+
+  describe("addNode", () => {
+    it("should add a node to the network", () => {
+      const node: string = "foo";
+      blockchain.addNode(node);
+      expect(blockchain.getNodes()).toContain(node);
+    });
+  });
+
+  describe("getNodes", () => {
+    it("should get the network nodes", () => {
+      expect(blockchain.getNodes()).toBeDefined();
+      expect(blockchain.getNodes()).toBeInstanceOf(Array<string>);
+    });
+  });
+
   describe("mine", () => {
     it("should mine a new block with the provided nonce, prevHash, and hash", () => {
       const nonce: number = 123;

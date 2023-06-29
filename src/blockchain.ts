@@ -4,11 +4,17 @@ import Block from "./model/block";
 import Transaction from "./model/transaction";
 import BlockData from "./model/blockdata";
 
+const port: string = process.argv[2];
+
 export default class Blockchain {
+  private node: string;
+  private nodes: string[];
   private chain: Block[];
   private pendingTransactions: Transaction[];
 
   public constructor() {
+    this.node = `http://localhost:${port}`;
+    this.nodes = [];
     this.chain = [];
     this.pendingTransactions = [];
     this.mine(100, "0", "0");
@@ -20,6 +26,18 @@ export default class Blockchain {
 
   public getPendingTransactions(): Transaction[] {
     return this.pendingTransactions;
+  }
+
+  public getNode(): string {
+    return this.node;
+  }
+
+  public getNodes(): string[] {
+    return this.nodes;
+  }
+
+  public addNode(node: string): void {
+    this.nodes.push(node);
   }
 
   public mine(nonce: number, prevHash: string, hash: string): Block {

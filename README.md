@@ -1,4 +1,4 @@
-# blockchain-js
+# Blockchain
 
 This is the development of a Proof-of-Work (PoW) blockchain.
 

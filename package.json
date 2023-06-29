@@ -4,13 +4,19 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "start": "nodemon --watch src -e ts ./src/api.ts",
-    "test": "jest",
-    "coverage": "jest --coverage"
+    "coverage": "jest --coverage",
+    "start": "nodemon --watch src -e ts ./src/node.ts 3000",
+    "node1": "nodemon --watch src -e ts ./src/node.ts 3001",
+    "node2": "nodemon --watch src -e ts ./src/node.ts 3002",
+    "node3": "nodemon --watch src -e ts ./src/node.ts 3003",
+    "node4": "nodemon --watch src -e ts ./src/node.ts 3004",
+    "node5": "nodemon --watch src -e ts ./src/node.ts 3005",
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.4.0",
     "body-parser": "^1.20.2",
     "express": "^4.17.17",
     "nodemon": "^2.0.22",
