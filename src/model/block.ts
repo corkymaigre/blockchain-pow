@@ -1,10 +1,8 @@
-import Transaction from "./transaction";
+import BlockData from "./blockdata";
 
-export default interface Block {
-  index: number;
+export default interface Block extends BlockData {
   timestamp: number;
-  transactions: Transaction[];
   nonce: number;
-  prevBlockHash: string;
+  prevHash: string;
   hash: string;
 }

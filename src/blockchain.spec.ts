@@ -1,28 +1,56 @@
 import Blockchain from "./blockchain";
+
 import Block from "./model/block";
-import Transaction from "./model/transaction";
+import BlockData from "./model/blockdata";
 
 describe("Blockchain", () => {
   let blockchain: Blockchain;
 
   beforeEach(() => {
+    jest.spyOn(Date, "now").mockReturnValue(1688033869313);
+
     blockchain = new Blockchain();
   });
 
-  describe("mineBlock", () => {
-    it("should mine a new block with the provided nonce, prevBlockHash, and hash", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe("getChain", () => {
+    it("should get the chain", () => {
+      expect(blockchain.getChain()).toEqual([
+        {
+          hash: "0",
+          index: 1,
+          nonce: 100,
+          prevHash: "0",
+          timestamp: 1688033869313,
+          transactions: [],
+        },
+      ]);
+    });
+  });
+
+  describe("getPendingTransactions", () => {
+    it("should get the pending transactions", () => {
+      expect(blockchain.getPendingTransactions()).toEqual([]);
+    });
+  });
+
+  describe("mine", () => {
+    it("should mine a new block with the provided nonce, prevHash, and hash", () => {
       const nonce: number = 123;
-      const prevBlockHash: string = "prevHash";
+      const prevHash: string = "prevHash";
       const hash: string = "blockHash";
 
-      const block: Block = blockchain.mineBlock(nonce, prevBlockHash, hash);
+      const block: Block = blockchain.mine(nonce, prevHash, hash);
 
       expect(block).toBeDefined();
       expect(block.index).toBe(blockchain.getChain().length);
       expect(block.timestamp).toBeDefined();
       expect(block.transactions).toEqual(blockchain.getPendingTransactions());
       expect(block.nonce).toBe(nonce);
-      expect(block.prevBlockHash).toBe(prevBlockHash);
+      expect(block.prevHash).toBe(prevHash);
       expect(block.hash).toBe(hash);
       expect(blockchain.getPendingTransactions()).toEqual([]);
     });
@@ -30,8 +58,8 @@ describe("Blockchain", () => {
 
   describe("getLastBlock", () => {
     it("should return the last block in the chain", () => {
-      const block1: Block = blockchain.mineBlock(1, "prevHash1", "hash1");
-      const block2: Block = blockchain.mineBlock(2, "prevHash2", "hash2");
+      const block1: Block = blockchain.mine(1, "prevHash1", "hash1");
+      const block2: Block = blockchain.mine(2, "prevHash2", "hash2");
 
       const lastBlock: Block = blockchain.getLastBlock();
 
@@ -55,12 +83,12 @@ describe("Blockchain", () => {
 
   describe("hash", () => {
     it("should calculate the hash of the block", () => {
-      const prevBlockHash: string = "prevHash";
-      const data: Transaction[] = [{ amount: 100, from: "sender", to: "receiver" }];
+      const prevHash: string = "prevHash";
+      const data: BlockData = { index: 5, transactions: [{ amount: 100, from: "sender", to: "receiver" }] };
       const nonce: number = 123;
-      const expectedHash: string = "722a6a8def3f495b9bfa3f35af6c4aa0f91a8dd3847f57404ec7db43f97095b6";
+      const expectedHash: string = "ca28acf55f03c2daea1cb5e676bc6de34f2a60f43189eba2b2d8dc6ab3fa08cd";
 
-      const hash: string = blockchain.hash(prevBlockHash, data, nonce);
+      const hash: string = blockchain.hash(prevHash, data, nonce);
 
       expect(hash).toBe(expectedHash);
     });
@@ -68,13 +96,13 @@ describe("Blockchain", () => {
 
   describe("proofOfWork", () => {
     it("should find a valid nonce for the block", () => {
-      const prevBlockHash: string = "prevHash";
-      const data: Transaction[] = [{ amount: 100, from: "sender", to: "receiver" }];
+      const prevHash: string = "prevHash";
+      const data: BlockData = { index: 5, transactions: [{ amount: 100, from: "sender", to: "receiver" }] };
 
-      const nonce: number = blockchain.proofOfWork(prevBlockHash, data);
+      const nonce: number = blockchain.proofOfWork(prevHash, data);
 
       expect(nonce).toBeDefined();
-      expect(blockchain.hash(prevBlockHash, data, nonce).substring(0, 4)).toBe("0000");
+      expect(blockchain.hash(prevHash, data, nonce).substring(0, 4)).toBe("0000");
     });
   });
 });

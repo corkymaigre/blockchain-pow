@@ -2,6 +2,7 @@ import sha256 from "sha256";
 
 import Block from "./model/block";
 import Transaction from "./model/transaction";
+import BlockData from "./model/blockdata";
 
 export default class Blockchain {
   private chain: Block[];
@@ -10,7 +11,7 @@ export default class Blockchain {
   public constructor() {
     this.chain = [];
     this.pendingTransactions = [];
-    this.mineBlock(100, "0", "0");
+    this.mine(100, "0", "0");
   }
 
   public getChain(): Block[] {
@@ -21,13 +22,13 @@ export default class Blockchain {
     return this.pendingTransactions;
   }
 
-  public mineBlock(nonce: number, prevBlockHash: string, hash: string): Block {
+  public mine(nonce: number, prevHash: string, hash: string): Block {
     const block: Block = {
       index: this.chain.length + 1,
       timestamp: Date.now(),
       transactions: this.pendingTransactions,
       nonce,
-      prevBlockHash,
+      prevHash,
       hash,
     };
     this.pendingTransactions = [];
@@ -44,16 +45,16 @@ export default class Blockchain {
     return this.getLastBlock()["index"] + 1;
   }
 
-  public hash(prevBlockHash: string, data: Transaction[], nonce: number): string {
-    return sha256(prevBlockHash + String(nonce) + JSON.stringify(data));
+  public hash(prevHash: string, data: BlockData, nonce: number): string {
+    return sha256(prevHash + String(nonce) + JSON.stringify(data));
   }
 
-  public proofOfWork(prevBlockHash: string, data: Transaction[]): number {
+  public proofOfWork(prevHash: string, data: BlockData): number {
     let nonce: number = 0;
-    let hash: string = this.hash(prevBlockHash, data, nonce);
+    let hash: string = this.hash(prevHash, data, nonce);
     while (hash.substring(0, 4) !== "0000") {
       nonce++;
-      hash = this.hash(prevBlockHash, data, nonce);
+      hash = this.hash(prevHash, data, nonce);
     }
     return nonce;
   }
