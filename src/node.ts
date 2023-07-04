@@ -8,6 +8,11 @@ import Block from "./model/block";
 import BlockData from "./model/blockdata";
 import Transaction from "./model/transaction";
 
+interface BlockchainData {
+  chain: Block[];
+  pendingTransactions: Transaction[];
+}
+
 const MINING_REWARD: number = 12.5;
 const NODE_ADDRESS: string = uuid().split("-").join("");
 
@@ -173,6 +178,42 @@ app.post("/nodes/register/bulk", (req, res) => {
     blockchain.addNode(node);
   }
   res.json({ message: "Bulk registration successful." });
+});
+
+app.get("/consensus", (req, res) => {
+  const promises: Promise<AxiosResponse>[] = [];
+  for (const node of blockchain.getNodes()) {
+    const config: AxiosRequestConfig = {
+      url: `${node}/blockchain`,
+      method: "GET",
+    };
+    promises.push(axios(config));
+  }
+  Promise.all(promises).then((responses: AxiosResponse<BlockchainData>[]) => {
+    const chainLength: number = blockchain.getChain().length;
+    let maxChainLength: number = chainLength;
+    let longestChain: Block[] | undefined;
+    let transactions: Transaction[] | undefined;
+
+    for (const response of responses) {
+      const chain: Block[] = response.data.chain;
+      const pendingTransactions: Transaction[] = response.data.pendingTransactions;
+      const length: number = chain.length;
+      if (length > maxChainLength) {
+        maxChainLength = length;
+        longestChain = chain;
+        transactions = pendingTransactions;
+      }
+    }
+
+    if (!longestChain || !transactions || (longestChain && transactions && !blockchain.isChainValid(longestChain))) {
+      return res.json({ message: "Current chain has not been replaced.", chain: blockchain.getChain() });
+    }
+
+    blockchain.setChain(longestChain);
+    blockchain.setPendingTransactions(transactions);
+    res.json({ message: "This chain has been replaced.", chain: blockchain.getChain() });
+  });
 });
 
 app.listen(Number(port) || 3000, () => {

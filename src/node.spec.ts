@@ -206,4 +206,89 @@ describe("API Routes", () => {
       expect(response.body.message).toBe("Bulk registration successful.");
     });
   });
+
+  describe("GET /consensus", () => {
+    xit("should return a success response when the chain is replaced", async () => {
+      const mockNodes = ["http://node1", "http://node2", "http://node3"];
+      const mockChain = [
+        {
+          hash: "0",
+          index: 1,
+          nonce: 100,
+          prevHash: "0",
+          timestamp: 1688479116955,
+          transactions: [],
+        },
+      ];
+      const mockPendingTransactions = [{}, {}];
+      const mockAxiosResponse = (data) => ({
+        data,
+      });
+
+      // Mock the axios requests and responses
+      axios
+        .mockResolvedValueOnce(
+          mockAxiosResponse({
+            chain: [
+              {
+                hash: "0",
+                index: 1,
+                nonce: 100,
+                prevHash: "0",
+                timestamp: 1688479116955,
+                transactions: [],
+              },
+            ],
+            pendingTransactions: [],
+          })
+        )
+        .mockResolvedValueOnce(mockAxiosResponse({ chain: mockChain, pendingTransactions: [] }))
+        .mockResolvedValueOnce(mockAxiosResponse({ chain: [{}, {}], pendingTransactions: mockPendingTransactions }))
+        .mockResolvedValueOnce(mockAxiosResponse({ chain: mockChain, pendingTransactions: mockPendingTransactions }));
+
+      // Make the request to the API endpoint
+      const response = await request(app).get("/consensus");
+
+      // Assert the response
+      expect(response.statusCode).toBe(200);
+      expect(response.body.message).toBe("This chain has been replaced.");
+      expect(response.body.chain).toEqual(mockChain);
+    });
+
+    it("should return a failure response when the chain has not been replaced", async () => {
+      const mockChain = [
+        {
+          hash: "0",
+          index: 1,
+          nonce: 100,
+          prevHash: "0",
+          timestamp: 1688479116955,
+          transactions: [],
+        },
+      ];
+      const mockPendingTransactions = [];
+      const mockAxiosResponse = (data) => ({
+        data,
+      });
+
+      // Mock the axios requests and responses
+      axios
+        .mockResolvedValueOnce(mockAxiosResponse({ chain: [], pendingTransactions: [] }))
+        .mockResolvedValueOnce(mockAxiosResponse({ chain: mockChain, pendingTransactions: mockPendingTransactions }));
+
+      // Make the request to the API endpoint
+      const response = await request(app).get("/consensus");
+
+      // Assert the response
+      expect(response.statusCode).toBe(200);
+      expect(response.body.message).toBe("Current chain has not been replaced.");
+      expect(response.body.chain).toHaveLength(1);
+      expect(response.body.chain[0].hash).toBe("0");
+      expect(response.body.chain[0].index).toBe(1);
+      expect(response.body.chain[0].nonce).toBe(100);
+      expect(response.body.chain[0].prevHash).toBe("0");
+      expect(response.body.chain[0]).toHaveProperty("timestamp");
+      expect(response.body.chain[0].transactions).toEqual([]);
+    });
+  });
 });
