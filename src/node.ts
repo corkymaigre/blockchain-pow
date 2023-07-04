@@ -6,29 +6,50 @@ import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import Blockchain from "./blockchain";
 import Block from "./model/block";
 import BlockData from "./model/blockdata";
+import Transaction from "./model/transaction";
 
 const MINING_REWARD: number = 12.5;
 const NODE_ADDRESS: string = uuid().split("-").join("");
 
 const port: string = process.argv[2];
 
-const blockchain: Blockchain = new Blockchain();
+export const blockchain: Blockchain = new Blockchain();
 
 const app: express.Express = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
-app.get("/blockchain", (req, res) => {
+app.get("/blockchain", (_req, res) => {
   res.json(blockchain);
 });
 
 app.post("/blockchain/transaction", (req, res) => {
-  const blockIndex = blockchain.createTransaction(req.body.amount, req.body.from, req.body.to);
+  const transaction: Transaction = req.body;
+  const blockIndex: number = blockchain.addPendingTransaction(transaction);
   res.json({ message: `Transaction will be added in block ${blockIndex}.` });
 });
 
-app.get("/blockchain/mine", (req, res) => {
+app.post("/blockchain/transaction/broadcast", (req, res) => {
+  const transaction: Transaction = blockchain.createTransaction(req.body.amount, req.body.from, req.body.to);
+  blockchain.addPendingTransaction(transaction);
+
+  const promises: Promise<AxiosResponse>[] = [];
+  for (const node of blockchain.getNodes()) {
+    const config: AxiosRequestConfig = {
+      url: `${node}/blockchain/transaction`,
+      method: "POST",
+      data: transaction,
+    };
+    promises.push(axios(config));
+  }
+
+  Promise.all(promises).then(() => {
+    res.json({ message: "Transaction created and broadcast successfully." });
+  });
+});
+
+app.get("/blockchain/mine", (_req, res) => {
   const lastBlock: Block = blockchain.getLastBlock();
   const prevHash: string = lastBlock.hash;
 
@@ -39,15 +60,58 @@ app.get("/blockchain/mine", (req, res) => {
 
   const nonce: number = blockchain.proofOfWork(prevHash, data);
   const hash: string = blockchain.hash(prevHash, data, nonce);
-
-  blockchain.createTransaction(MINING_REWARD, "00", NODE_ADDRESS);
-
   const block: Block = blockchain.mine(nonce, prevHash, hash);
 
-  res.json({
-    message: "New block mined successfully",
-    block,
-  });
+  const promises: Promise<AxiosResponse>[] = [];
+
+  for (const node of blockchain.getNodes()) {
+    const config: AxiosRequestConfig = {
+      url: `${node}/blockchain/receive`,
+      method: "POST",
+      data: { block },
+    };
+    promises.push(axios(config));
+  }
+
+  Promise.all(promises)
+    .then(() => {
+      const config: AxiosRequestConfig = {
+        url: `${blockchain.getNode()}/blockchain/transaction/broadcast`,
+        method: "POST",
+        data: {
+          amount: MINING_REWARD,
+          to: "00",
+          from: NODE_ADDRESS,
+        },
+      };
+      return axios(config);
+    })
+    .then(() => {
+      res.json({
+        message: "New block mined and broadcast successfully",
+        block,
+      });
+    });
+});
+
+app.post("/blockchain/receive", (req, res) => {
+  const block: Block = req.body.block;
+  const lastBlock: Block = blockchain.getLastBlock();
+  const correctHash: boolean = lastBlock.hash === block.prevHash;
+  const correctIndex: boolean = lastBlock["index"] + 1 === block["index"];
+  if (correctHash && correctIndex) {
+    blockchain.addBlock(block);
+    blockchain.setPendingTransactions([]);
+    res.json({
+      message: "New block received and accepted",
+      block,
+    });
+  } else {
+    res.json({
+      message: "New block rejected",
+      block,
+    });
+  }
 });
 
 app.post("/nodes/broadcast", (req, res) => {

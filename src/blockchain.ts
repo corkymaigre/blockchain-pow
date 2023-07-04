@@ -1,4 +1,5 @@
 import sha256 from "sha256";
+import { v1 as uuid } from "uuid";
 
 import Block from "./model/block";
 import Transaction from "./model/transaction";
@@ -24,8 +25,16 @@ export default class Blockchain {
     return this.chain;
   }
 
+  public addBlock(block: Block): void {
+    this.chain.push(block);
+  }
+
   public getPendingTransactions(): Transaction[] {
     return this.pendingTransactions;
+  }
+
+  public setPendingTransactions(pendingTransactions: Transaction[]): void {
+    this.pendingTransactions = pendingTransactions;
   }
 
   public getNode(): string {
@@ -58,8 +67,12 @@ export default class Blockchain {
     return this.chain[this.chain.length - 1];
   }
 
-  public createTransaction(amount: number, from: string, to: string): number {
-    this.pendingTransactions.push({ amount, from, to });
+  public createTransaction(amount: number, from: string, to: string): Transaction {
+    return { id: uuid().split("-").join(""), amount, from, to };
+  }
+
+  public addPendingTransaction(transaction: Transaction): number {
+    this.pendingTransactions.push(transaction);
     return this.getLastBlock()["index"] + 1;
   }
 
