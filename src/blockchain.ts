@@ -67,17 +67,57 @@ export default class Blockchain {
     return block;
   }
 
+  public getBlock(hash: string): Block | undefined {
+    for (const block of this.chain) {
+      if (block.hash === hash) return block;
+    }
+    return undefined;
+  }
+
   public getLastBlock(): Block {
     return this.chain[this.chain.length - 1];
   }
 
+  public getTransaction(id: string): { block: Block; transaction: Transaction } | undefined {
+    for (const block of this.chain) {
+      for (const transaction of block.transactions) {
+        if (transaction.id === id) {
+          return { block, transaction };
+        }
+      }
+    }
+    return undefined;
+  }
+
   public createTransaction(amount: number, from: string, to: string): Transaction {
+    // TODO: Check sufficient amount
     return { id: uuid().split("-").join(""), amount, from, to };
   }
 
   public addPendingTransaction(transaction: Transaction): number {
     this.pendingTransactions.push(transaction);
     return this.getLastBlock()["index"] + 1;
+  }
+
+  public getAddressData(address: string) {
+    const transactions: Transaction[] = [];
+    for (const block of this.chain) {
+      for (const transaction of block.transactions) {
+        if (transaction.from === address || transaction.to === address) {
+          transactions.push(transaction);
+        }
+      }
+    }
+    let balance = 0;
+    for (const transaction of transactions) {
+      if (transaction.to === address) balance += transaction.amount;
+      else if (transaction.from === address) balance -= transaction.amount;
+    }
+
+    return {
+      transactions,
+      balance,
+    };
   }
 
   public hash(prevHash: string, data: BlockData, nonce: number): string {

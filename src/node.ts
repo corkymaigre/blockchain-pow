@@ -216,6 +216,26 @@ app.get("/consensus", (req, res) => {
   });
 });
 
+app.get("/block/:hash", (req, res) => {
+  const hash: string = req.params.hash;
+  const block: Block | undefined = blockchain.getBlock(hash);
+  res.json({
+    block,
+  });
+});
+
+app.get("/transaction/:id", (req, res) => {
+  const id: string = req.params.id;
+  const transactionData = blockchain.getTransaction(id);
+  res.json(transactionData);
+});
+
+app.get("/address/:address", (req, res) => {
+  const address = req.params.address;
+  const addressData = blockchain.getAddressData(address);
+  res.json(addressData);
+});
+
 app.listen(Number(port) || 3000, () => {
   console.log(`Listening on port ${port || 3000}...`);
 });
